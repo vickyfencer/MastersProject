@@ -215,7 +215,7 @@ void loop() {
 
     if (currentMillis - lastTime > 1000) {
         lastTime = currentMillis;
-        waterRate = pulseCount * 2.25; // Example calculation, adjust based on your flow sensor specs
+        waterRate = pulseCount * 4.5; // Example calculation, adjust based on your flow sensor specs
         totalVolume += waterRate;
  Serial.print("<------------------------------------------------------------------->");
         Serial.print("Timestamp: ");
@@ -237,6 +237,7 @@ void loop() {
     Serial.println(" mg");
 
         float IDWG = totalVolume / 1000.0;
+        
         Serial.print("Predicted Interdialytic Weight Gain (IDWG): ");
         Serial.print(IDWG);
         Serial.println(" kg");
