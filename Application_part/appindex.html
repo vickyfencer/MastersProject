@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Consumption Monitoring Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  
+  
+</head>
+<body>
+  <div class="navbar">
+    <h1>Dashboard</h1>
+    <div class="menu-icon" onclick="toggleMenu()">
+      <i class="fas fa-bars"></i>
+    </div>
+    <ul id="navMenu">
+      <li><a href="#">Home</a></li>
+      <li><a href="#">About</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+  </div>
+  <div class="dashboard">
+    <h1>Consumption Monitoring Dashboard</h1>
+    <div class="gauges-container">
+      <!-- Gauge for Current Flow Rate -->
+      <div class="gauge">
+        <h2>Current Flow Rate</h2>
+        <svg viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
+          <circle id="flowRateGauge" class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#0288d1" stroke-width="3" stroke-dasharray="0 100"></circle>
+        </svg>
+        <div>
+          <span id="flowRateValue">0</span> mL/s
+        </div>
+      </div>
+      <!-- Gauge for Total Volume -->
+      <div class="gauge">
+        <h2>Total Volume</h2>
+        <svg viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
+          <circle id="volumeGauge" class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#0288d1" stroke-width="3" stroke-dasharray="0 100"></circle>
+        </svg>
+        <div>
+          <span id="volumeValue">0</span>
+        </div>
+      </div>
+      <!-- Gauge for Predicted IDWG -->
+      <div class="gauge">
+        <h2>Predicted IDWG</h2>
+        <svg viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
+          <circle id="idwgGauge" class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#0288d1" stroke-width="3" stroke-dasharray="0 100"></circle>
+        </svg>
+        <div>
+          <span id="idwgValue">0</span> kg
+        </div>
+      </div>
+      <!-- Gauge for NaCl Concentration -->
+      <div class="gauge">
+        <h2>NaCl Concentration</h2>
+        <svg viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg">
+          <circle id="naclGauge" class="donut-segment" cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#0288d1" stroke-width="3" stroke-dasharray="0 100"></circle>
+        </svg>
+        <div>
+          <span id="naclValue">0</span> mg
+        </div>
+      </div>
+    </div>
+    <div class="data-container">
+      <div class="data-box">
+        <p id="currentFlowRateText">Current Flow Rate: 0 ml/s</p>
+      </div>
+      <div class="data-box">
+        <p id="totalVolumeText">Total Volume: 0 mL</p>
+      </div>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Total Volume</th>
+            <th>Predicted IDWG</th>
+            <th>NaCl Concentration</th>
+          </tr>
+        </thead>
+        <tbody id="dataTable">
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    const flowRateGauge = document.getElementById('flowRateGauge');
+    const volumeGauge = document.getElementById('volumeGauge');
+    const idwgGauge = document.getElementById('idwgGauge');
+    const naclGauge = document.getElementById('naclGauge');
+    const flowRateValue = document.getElementById('flowRateValue');
+    const volumeValue = document.getElementById('volumeValue');
+    const idwgValue = document.getElementById('idwgValue');
+    const naclValue = document.getElementById('naclValue');
+    const dataTable = document.getElementById('dataTable');
+
+    let totalVolume = 0;
+    let flowRate = 0;
+    let predictedIDWG = 0;
+    let naclConcentration = 0;
+
+    function updateGauges() {
+      const flowRatePercentage = Math.min(flowRate / 100, 1) * 100;
+      const volumePercentage = Math.min(totalVolume / 1000, 1) * 100;
+      const idwgPercentage = Math.min(predictedIDWG / 10, 1) * 100;
+      const naclPercentage = Math.min(naclConcentration / 100, 1) * 100;
+
+      flowRateGauge.style.strokeDasharray = `${flowRatePercentage} ${100 - flowRatePercentage}`;
+      volumeGauge.style.strokeDasharray = `${volumePercentage} ${100 - volumePercentage}`;
+      idwgGauge.style.strokeDasharray = `${idwgPercentage} ${100 - idwgPercentage}`;
+      naclGauge.style.strokeDasharray = `${naclPercentage} ${100 - naclPercentage}`;
+
+      flowRateValue.textContent = flowRate.toFixed(2);
+      volumeValue.textContent = totalVolume.toFixed(2);
+      idwgValue.textContent = predictedIDWG.toFixed(2);
+      naclValue.textContent = naclConcentration.toFixed(2);
+    }
+
+    function updateTable() {
+  const row = document.createElement('tr');
+  const timestampCell = document.createElement('td');
+  const volumeCell = document.createElement('td');
+  const idwgCell = document.createElement('td');
+  const naclCell = document.createElement('td');
+
+  const timestamp = new Date().toLocaleString();
+  timestampCell.textContent = timestamp;
+  
+  // Format Total Volume with appropriate unit
+  let volumeDisplay;
+  if (totalVolume >= 1000) {
+    volumeDisplay = (totalVolume / 1000).toFixed(2) + ' L';
+  } else {
+    volumeDisplay = totalVolume.toFixed(2) + ' mL';
+  }
+  volumeCell.textContent = volumeDisplay;
+
+  // Format Predicted IDWG with appropriate unit
+  let idwgDisplay;
+  if (predictedIDWG >= 1) {
+    idwgDisplay = predictedIDWG.toFixed(2) + ' kg';
+  } else {
+    idwgDisplay = (predictedIDWG * 1000).toFixed(2) + ' g';
+  }
+  idwgCell.textContent = idwgDisplay;
+
+  // Format NaCl Concentration with appropriate unit
+  let naclDisplay;
+  if (naclConcentration >= 1) {
+    naclDisplay = naclConcentration.toFixed(2) + ' g';
+  } else {
+    naclDisplay = (naclConcentration * 1000).toFixed(2) + ' mg';
+  }
+  naclCell.textContent = naclDisplay;
+
+  row.appendChild(timestampCell);
+  row.appendChild(volumeCell);
+  row.appendChild(idwgCell);
+  row.appendChild(naclCell);
+  dataTable.appendChild(row);
+}
+
+
+    function toggleMenu() {
+      const navMenu = document.getElementById('navMenu');
+      navMenu.classList.toggle('active');
+    }
+
+    // Simulate updates from the sensor
+    setInterval(() => {
+      flowRate = Math.random() * 100;
+      totalVolume += flowRate;
+      predictedIDWG = totalVolume * 0.005; // Example calculation for IDWG
+      naclConcentration = flowRate * 0.02; // Example calculation for NaCl
+
+      updateGauges();
+      updateTable();
+    }, 5000);
+  </script>
+</body>
+</html>

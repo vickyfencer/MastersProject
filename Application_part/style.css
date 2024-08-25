@@ -1,0 +1,173 @@
+body {
+      font-family: Arial, sans-serif;
+      color: #00796b;
+      margin: 0;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('wave.png') no-repeat center center fixed;
+      background-size: cover;
+      filter: blur(11px);
+      z-index: -1;
+    }
+
+    .navbar {
+      background-color: #0288d1;
+      padding: 10px;
+      color: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
+
+    .navbar h1 {
+      margin: 0;
+      font-size: 1.5em;
+    }
+
+    .menu-icon {
+      display: none;
+      font-size: 1.5em;
+      cursor: pointer;
+    }
+
+    .navbar ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+    }
+
+    .navbar ul li {
+      margin: 0 15px;
+    }
+
+    .navbar ul li a {
+      color: #ffffff;
+      text-decoration: none;
+      font-size: 1em;
+    }
+
+    .navbar ul li a:hover {
+      text-decoration: underline;
+    }
+
+    .dashboard {
+      padding: 20px;
+      border-radius: 10px;
+      width: 80%;
+      max-width: 1000px;
+      margin-top: 100px;
+      margin-left: 240px;
+      margin-right: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      text-align: center;
+      color: #0288d1;
+    }
+
+    .gauges-container {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+    }
+
+    .gauge {
+      text-align: center;
+      margin: 0 10px;
+    }
+
+    .gauge h2 {
+      font-size: 1.2em;
+      margin-bottom: 10px;
+      color: #00796b;
+    }
+
+    .gauge svg {
+      transform: rotate(-90deg);
+      display: block;
+      margin: auto;
+      width: 120px;
+      height: 120px;
+    }
+
+    .gauge .donut-segment {
+      transition: stroke-dasharray 0.3s ease;
+    }
+
+    .data-container {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+    }
+
+    .data-box {
+      background-color: #0288d1;
+      color: #ffffff;
+      padding: 15px;
+      border-radius: 10px;
+      width: 45%;
+      text-align: center;
+    }
+
+    .table-container {
+      margin-top: 20px;
+      overflow-y: auto;
+      max-height: 300px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+      border: 1px solid #b3e5fc;
+    }
+
+    th {
+      background-color: #0288d1;
+      color: #ffffff;
+    }
+
+    td {
+      background-color: #e0f2f1;
+      color: #00796b;
+    }
+
+    @media (max-width: 768px) {
+      .navbar ul {
+        display: none;
+        flex-direction: column;
+        position: absolute;
+        top: 50px;
+        left: 0;
+        width: 100%;
+        background-color: #0288d1;
+      }
+
+      .navbar ul.active {
+        display: flex;
+      }
+
+      .menu-icon {
+        display: block;
+      }
+    }
