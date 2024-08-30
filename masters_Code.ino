@@ -4,7 +4,7 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 
-#define TdsSensorPin A0  // TDS sensor pin definition
+#define TdsSensorPin A0  // pin definition for TDS sensor 
 
 // Wi-Fi credentials
 const char* ssid = "VM5531913";
@@ -17,76 +17,75 @@ const char* password = "3p3GrFtdfakn";
 #define AUTHOR_PASSWORD "jjop kqop only xuag"
 #define RECIPIENT_EMAIL "boltlancer@gmail.com"
 
-// Pin connected to the flow sensor
-int waterPin = 2;
-volatile int pulseCount = 0;
-unsigned long lastTime = 0;
-unsigned long lastConsumptionTime = 0;
-unsigned long consumptionStartTime = 0;
-unsigned long totalConsumptionDuration = 0;
-unsigned long emailSentTime = 0;
+int waterPin = 2; // Pin connected to the flow sensor
+volatile int pulseCount = 0; // tracks no of pulses from the flow sensor 
+unsigned long lastTime = 0; // last time flow was stored 
+unsigned long lastConsumptionTime = 0;// stores last consumption rate 
+unsigned long consumptionStartTime = 0;// stores the start time of water consumption 
+unsigned long totalConsumptionDuration = 0; // stores the total duration of water consumption 
+unsigned long emailSentTime = 0; //stores the time of last email sent 
 
-float waterRate;
-float totalVolume = 0;
+float waterRate; //water consumption rate
+float totalVolume = 0; //Total Volume of water Consumed
 float recommendedDrinkingInterval = 7200000; // 2 hours
 float userDefinedWeeklyThreshold = 1000.0; // Default weekly threshold in mL
 const float NaClPercentage = 0.60; // Estimated percentage of NaCl in TDS
 
-float warningLevels[] = {0.25, 0.50, 0.75, 0.95}; // 25%, 50%, 75%, 95%
-bool warningsIssued[] = {false, false, false, false};
+float warningLevels[] = {0.25, 0.50, 0.75, 0.95}; // warning levels of fuild consumption 
+bool warningsIssued[] = {false, false, false, false}; //Tracks whether warnings has been issued
 
 int IDWGState = 0;
-const float IDWG_WARNING_LIMIT = 4.0;
+const float IDWG_WARNING_LIMIT = 4.0; // IDWG WARNING liMIT
 
-WiFiClient client;
-PubSubClient mqttClient(client);
-SMTPSession smtp;
-Session_Config config;
-SMTP_Message message;
+WiFiClient client; //WIFI Client 
+PubSubClient mqttClient(client); //MQTT Client 
+SMTPSession smtp; //SMTP Session
+Session_Config config; //SMTP Configuration
+SMTP_Message message; //smtp message
 
-String fluidType = "water";
-float predialysisWeight = 70.0;
+String fluidType = "water";// Type of fluid being consumed
+float predialysisWeight = 70.0; // Predialysis weight of the user
 
-bool isConsuming = false;
+bool isConsuming = false; //Flag to track water is consumed 
 
-WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org");
-
+WiFiUDP ntpUDP; // UDP client for NTP
+NTPClient timeClient(ntpUDP, "pool.ntp.org"); // NTP client
+//Interrupt Routine of flow sensor 
 void waterFlow() {
     pulseCount++;
     if (!isConsuming) {
         isConsuming = true;
-        consumptionStartTime = millis();
+        consumptionStartTime = millis(); //satart of consumption timer 
     }
 }
-
+// Function to connect to Wi-Fi
 void connectWiFi() {
     Serial.begin(115200);
     Serial.println("Starting WiFi connection...");
     WiFi.begin(ssid, password);
     Serial.print("Connecting to Wi-Fi");
-    while (WiFi.status() != WL_CONNECTED) {
+    while (WiFi.status() != WL_CONNECTED) { // Connect to Wi-Fi
         delay(300);
         Serial.print(".");
     }
     Serial.println(" Connected with IP: ");
-    Serial.println(WiFi.localIP());
+    Serial.println(WiFi.localIP());  // Print local IP address
 
-    timeClient.begin();
-    timeClient.setTimeOffset(0);
-    Serial.println("Waiting for NTP time sync...");
+    timeClient.begin();  // Start NTP client
+    timeClient.setTimeOffset(0);// Set time offset
+    Serial.println("Waiting for NTP time sync...");// Wait for time sync
     while (!timeClient.update()) {
         timeClient.forceUpdate();
         delay(1000);
     }
     Serial.println("Time synchronized.");
 }
-
+// Function to get the current time
 String getTime() {
     timeClient.update();
     return timeClient.getFormattedTime();
 }
-
+// Function to set up email parameters
 void setupEmail(String subject, String body) {
     config.server.host_name = SMTP_HOST;
     config.server.port = SMTP_PORT;
@@ -100,38 +99,38 @@ void setupEmail(String subject, String body) {
     message.addRecipient("Recipient", RECIPIENT_EMAIL);
     message.text.content = body;
 }
-
+// Function to send an email
 void sendEmail() {
     smtp.setTCPTimeout(10);
-    if (!smtp.connect(&config)) {
+    if (!smtp.connect(&config)) { //connect to SMTP Server
         Serial.println("Connection error");
         return;
     } else {
         Serial.println("SMTP connect successful");
     }
 
-    if (!MailClient.sendMail(&smtp, &message)) {
+    if (!MailClient.sendMail(&smtp, &message)) {  //Send Mail
         Serial.println("Error sending email: " + smtp.errorReason());
     } else {
         Serial.println("Email sent successfully");
     }
 }
-
+//Setup function 
 void setup() {
-    connectWiFi();
-    mqttClient.setServer("192.168.0.87", 1883); // Replace with your MQTT broker's IP address
+    connectWiFi(); // Connect to Wi-Fi
+    mqttClient.setServer("192.168.0.87", 1883);  // Set MQTT broker IP
 
-    pinMode(waterPin, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(waterPin), waterFlow, FALLING);
+    pinMode(waterPin, INPUT_PULLUP); // Setting water pin as input
+    attachInterrupt(digitalPinToInterrupt(waterPin), waterFlow, FALLING); //Attach Interrupt to Water Flow Sensor 
 
     pinMode(TdsSensorPin, INPUT);  // Initialize TDS sensor pin
 
     Serial.println("Setup complete. Interrupt attached.");
     Serial.println("Enter the weekly threshold value in mL:");
 }
-
+// Main loop function
 void loop() {
-    if (!mqttClient.connected()) {
+    if (!mqttClient.connected()) { //SETUP TO ESTABLISH CONNECTION With Mqtt
         Serial.println("Attempting MQTT connection...");
         while (!mqttClient.connected()) {
             if (mqttClient.connect("ArduinoClient")) {
@@ -148,14 +147,14 @@ void loop() {
 
     // Handle user input
     if (Serial.available() > 0) {
-        String input = Serial.readStringUntil('\n');
+        String input = Serial.readStringUntil('\n'); // Read user input
         Serial.flush();
-        char inputType = input.charAt(0);
+        char inputType = input.charAt(0);  // Get the type of input
         input.remove(0, 1);
 
         switch (inputType) {
         case 'T':
-            userDefinedWeeklyThreshold = input.toFloat();
+            userDefinedWeeklyThreshold = input.toFloat(); // Set weekly threshold
             Serial.print("Weekly threshold set to: ");
             Serial.println(userDefinedWeeklyThreshold);
             for (int i = 0; i < 4; i++) {
@@ -163,12 +162,12 @@ void loop() {
             }
             break;
         case 'F':
-            fluidType = input;
+            fluidType = input;  // Set fluid type
             Serial.print("Fluid type set to: ");
             Serial.println(fluidType);
             break;
         case 'W':
-            predialysisWeight = input.toFloat();
+            predialysisWeight = input.toFloat();  // Set predialysis weight
             Serial.print("Predialysis weight set to: ");
             Serial.println(predialysisWeight);
             break;
@@ -183,10 +182,10 @@ void loop() {
     unsigned long int avgval_ADC;
 
     for (int i = 0; i < 10; i++) { 
-        buffer_tds[i] = analogRead(TdsSensorPin);
+        buffer_tds[i] = analogRead(TdsSensorPin);  //Read TDS Sesnor Readings 
         delay(30);
     }
-
+// Sort the TDS sensor values
     for (int i = 0; i < 9; i++) {
         for (int j = i + 1; j < 10; j++) {
             if (buffer_tds[i] > buffer_tds[j]) {
@@ -198,7 +197,7 @@ void loop() {
     }
 
     avgval_ADC = 0;
-    for (int i = 2; i < 8; i++) avgval_ADC += buffer_tds[i];
+    for (int i = 2; i < 8; i++) avgval_ADC += buffer_tds[i]; // Calculate average TDS value
 
     float voltage_value = (float)avgval_ADC * 5.0 / 1024.0 / 6;
     float TDS = (133.42 / voltage_value * voltage_value - 255.86 * voltage_value + 857.39 * voltage_value) * 0.5;
@@ -207,7 +206,7 @@ void loop() {
     float NaClConcentration = FDS * NaClPercentage;
 
     // Calculate NaCl Consumed
-    float totalVolume_mL = totalVolume; // Assuming totalVolume is in mL
+    float totalVolume_mL = totalVolume; //  totalVolume is in mL
     float NaClConsumed_mg = totalVolume_mL * NaClConcentration;
 
     // Continue with existing water flow logic
@@ -215,8 +214,8 @@ void loop() {
 
     if (currentMillis - lastTime > 1000) {
         lastTime = currentMillis;
-        waterRate = pulseCount * 4.5; // Example calculation, adjust based on your flow sensor specs
-        totalVolume += waterRate;
+        waterRate = pulseCount * 4.5; // calculation,based onflow sensor specs
+        totalVolume += waterRate; // Add water rate to total volume
  Serial.print("<------------------------------------------------------------------->");
         Serial.print("Timestamp: ");
         Serial.println(getTime());
@@ -236,7 +235,7 @@ void loop() {
           Serial.print(NaClConsumed_mg);
     Serial.println(" mg");
 
-        float IDWG = totalVolume / 1000.0;
+        float IDWG = totalVolume / 1000.0; 
         
         Serial.print("Predicted Interdialytic Weight Gain (IDWG): ");
         Serial.print(IDWG);
@@ -279,13 +278,13 @@ void loop() {
             payload += "\"}";
             mqttClient.publish("sensor/waterflow", payload.c_str());
 
-            setupEmail("Critical Alert: IDWG Critical Limit Exceeded", idwgWarning);
-            sendEmail();
+            setupEmail("Critical Alert: IDWG Critical Limit Exceeded", idwgWarning);//setting up message that has to be sendes as a mail 
+            sendEmail();  //sending mail 
 
-            IDWGState = 2;
+            IDWGState = 2; // Update IDWG state
         }
 
-        if (currentMillis - lastConsumptionTime >= recommendedDrinkingInterval) {
+        if (currentMillis - lastConsumptionTime >= recommendedDrinkingInterval) { // Check if it's time to recommend drinking water
             lastConsumptionTime = currentMillis;
 
             if ((millis() - emailSentTime >= 60000) && !isConsuming) {
@@ -308,15 +307,15 @@ void loop() {
                 payload += "\",\"timestamp\":\"";
                 payload += getTime();
                 payload += "\"}";
-                mqttClient.publish("sensor/waterflow", payload.c_str());
+                mqttClient.publish("sensor/waterflow", payload.c_str()); // Publish to MQTT
 
                 setupEmail("Water Consumption Recommendation", recommendation);
-                sendEmail();
+                sendEmail(); // Send email
 
-                emailSentTime = millis();
+                emailSentTime = millis(); // Update email sent time
             }
         }
-
+// logic to Check for fluid consumption warnings
         for (int i = 0; i < 4; i++) {
             if (!warningsIssued[i] && totalVolume >= userDefinedWeeklyThreshold * warningLevels[i]) {
                 String warning = "Warning: You have consumed " + String(warningLevels[i] * 100) + "% of your weekly fluid limit.";
@@ -336,13 +335,13 @@ void loop() {
                 payload += "\"}";
                 mqttClient.publish("sensor/waterflow", payload.c_str());
 
-                setupEmail("Fluid Consumption Warning", warning);
-                sendEmail();
+                setupEmail("Fluid Consumption Warning", warning); //SETTING UP THE MESSAGE 
+                sendEmail(); // Send email
 
-                warningsIssued[i] = true;
+                warningsIssued[i] = true; // Mark warning as issued
             }
         }
-
+// logic to Calculate and display total consumption duration
         if (isConsuming) {
             unsigned long currentDuration = millis() - consumptionStartTime;
             totalConsumptionDuration += currentDuration;
@@ -360,9 +359,9 @@ void loop() {
             Serial.print(totalDurationInSeconds);
             Serial.println(" seconds");
 
-            isConsuming = false;
+            isConsuming = false; // Reset consumption flag
         }
 
-        pulseCount = 0;
+        pulseCount = 0;  // Reset pulse count
     }
 }
